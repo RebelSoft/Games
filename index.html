@@ -1,0 +1,344 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <title>Apple Catcher</title>
+    <script type="text/javascript" src="js/phaser.min.js"></script>
+	<script src="https://js.leapmotion.com/leap-0.6.4.js"></script>
+	<script src="https://js.leapmotion.com/leap-plugins-0.1.8.js"></script>
+   <!--Load External Style sheet-->
+    <link type = "text/css" rel="stylesheet" href = "./Styles/styles.css">
+</head>
+<body>
+<div class = "appleSideBar">
+		<table border = "1px">
+		<tr>	
+			<td colspan = "2"><img src = "./assets/derivco.gif" alt = "derivco></img>"</td>
+		</tr>
+		<tr>
+			<td><img src="./assets/Apple.png" alt = "Normal Apple"/></td>
+			<td>Normal safe apple to eat +10 points</td>
+		</tr>
+		<tr>
+			<td><img src="./assets/slow.png" alt = "slow Apple"/></td>
+			<td>Slows down your speed</td>
+		</tr>
+		<tr>
+			<td><img src="./assets/dead.png" alt = "Death Apple"/></td>
+			<td>Instant Death</td>
+		</tr>
+		<tr>
+			<td><img src="./assets/bonus.png" alt = "Normal Apple"/></td>
+			<td>BONUS +100 Points</td>
+		</tr>
+		
+		</table>
+	</div>
+
+<script type="text/javascript">
+
+	var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+	function preload() {
+		game.load.image('sky', './assets/background.png');    
+		game.load.image('player', './assets/player.png');
+		game.load.image('star','./assets/joker.png');
+		game.load.image('death', './assets/Dead.png');
+		game.load.image('slow','./assets/slow.png');
+		game.load.image('explotion','./assets/explotion.png');
+		game.load.image('bonus','./assets/bonus.png');
+		game.load.image('heart1','./assets/heart1.png');
+		game.load.image('heart2','./assets/heart2.png');
+		game.load.image('heart3','./assets/heart3.png');
+		game.load.spritesheet('sprites', './assets/sprites.png', 85, 121, 5);
+
+		//text = game.add.text(game.world.centerX, game.world.centerY, "- Welcome -\n(Press ENTER to start)", { font: "65px Arial", fill: "#ff0044", align: "center" });
+		//text.anchor.setTo(0.5, 0.5);
+
+
+	}
+
+	//Global Variables
+	var player;
+	var speed = 500;
+	var appleSpeed = 50;
+	var deathAppleSpeed = 10000;
+	var slowAppleSpeed = 5000;
+	var bonusAppleSpeed = 3000;
+	var normalAppleSpeed= 1000;
+	var mouth;
+	var stars;
+	var deaths;
+	var slows;
+	var bonuss;
+	var score = 0;
+	var scoreText;
+	var text;
+	var totalScore = 200;
+	var deathTimer;
+	var slowTimer;
+	var bonusTimer;
+	var timer, timer1, timer2, timer3;
+	var p = 1;
+	var heart1, heart2, heart3;
+	var lives = 3;
+
+	//Determines if player is alive
+	var alive = true;
+
+
+
+	function create() {
+		//  We're going to be using physics, so enable the Arcade Physics system
+		game.physics.startSystem(Phaser.Physics.ARCADE);
+
+		//  A simple background for our game
+		game.add.sprite(0, 0, 'sky');		
+		
+		player  = game.add.sprite(30, game.world.height - 130, 'sprites', 2);
+		heart1 = game.add.sprite(680, 20, 'heart1');
+		heart2 = game.add.sprite(720, 20, 'heart2');
+		heart3 = game.add.sprite(760, 20, 'heart3');
+		player.animations.add('eatLeft', [2, 1 , 0, 2], 10, true);
+		player.animations.add('eatRight', [2, 3 , 4, 2], 10, true);
+		
+		 //  We need to enable physics on the player
+		game.physics.arcade.enable(player);
+
+		player.body.collideWorldBounds = true;
+
+		scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+
+		 //  Finally some stars to collect
+		stars = game.add.group();
+		deaths = game.add.group();
+		slows = game.add.group();
+		bonuss = game.add.group();
+		//  We will enable physics for any star that is created in this group
+		stars.enableBody = true;
+		deaths.enableBody = true;
+		slows.enableBody = true;
+		bonuss.enableBody = true;
+		//Setting timer variables
+		if(alive)
+		{
+			timer = setInterval(createApple, normalAppleSpeed);
+			timer1 = setInterval(createApple, normalAppleSpeed);
+			timer2 = setInterval(createApple, normalAppleSpeed);				
+			deathTimer = setInterval(createDeathApple, deathAppleSpeed);
+			slowTimer = setInterval(createSlowApple, slowAppleSpeed);
+			bonusTimer = setInterval(createBonusApple, bonusAppleSpeed);
+			for(var i = 1;i<=2;i++)
+			{
+				timer3 = setInterval(createDeathApple, deathAppleSpeed);
+			}	
+		}
+		//  Here we'll create 12 of them evenly spaced apart
+		for (var i = 0; p < 1; i++)
+		{
+			//  Create a star inside of the 'stars' group
+			var star = stars.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'star');
+			var death = deaths.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'death');
+			var slow = slows.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'slow');
+			var bonus = bonuss.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'bonus');
+
+			//  Let gravity do its thing
+			star.body.gravity.y =  appleSpeed;
+			death.body.gravity.y =  deathAppleSpeed;
+			bonus.body.gravity.y =  200;
+			//  This just gives each star a slightly random bounce value
+		   
+			p = p + 6;
+		}
+		//Creating a normal apple
+		function createApple() {
+			 star = stars.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'star');             
+			 star.body.gravity.y = appleSpeed;         
+		}
+		//Creating a Death apple
+		function createDeathApple()
+		{
+			death = deaths.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'death');
+			death.body.gravity.y =  200;
+		}
+		//Creating a Slow apple
+		function createSlowApple()
+		{
+			slow = slows.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'slow');
+			slow.body.gravity.y =  200;
+		}
+		//Creating a Bonus apple
+		function createBonusApple()
+		{
+			bonus = bonuss.create(p * Math.floor((Math.random() * 650) + 40), p *Math.floor((Math.random() * 100) + 50), 'bonus');
+			bonus.body.gravity.y =  200;
+		}
+		//  Now let's create two ledges
+		cursors = game.input.keyboard.createCursorKeys();
+		this.input.keyboard.addKeyCapture([Phaser.Keyboard.ESC]);
+		this.input.keyboard.addKeyCapture([Phaser.Keyboard.ENTER]);
+	}
+
+	function update() {
+		if (alive) {
+		Leap1();
+			player.body.velocity.x = 0;
+			//player.body.velocity.y = 0;
+			if (cursors.left.isDown)
+			{
+				//  Move to the Right
+				player.body.velocity.x = -score;    
+				player.animations.play('eatRight', 10, false, false);
+			}
+			else if (cursors.right.isDown)
+			{
+				//  Move to the Left
+				player.body.velocity.x = score; 
+				player.animations.play('eatLeft', 10, false, false);				
+			}
+			
+			if(cursors.up.isDown && score>=10)
+			{
+				player.body.velocity.y =  -score;			
+				
+			}
+			else if(score>=10)
+			{
+			player.body.velocity.y=score;
+			}
+			
+				
+			
+			
+			 
+	
+			
+			
+			//COLLISION
+			game.physics.arcade.overlap(player, stars, normalApple, null, this);
+			game.physics.arcade.overlap(player, deaths, death, null, this);
+			game.physics.arcade.overlap(player, slows, slow, null, this);
+			game.physics.arcade.overlap(player, bonuss, bonus, null, this);
+		}
+		//When user died and presses ESC button it reloads the page
+		if (this.input.keyboard.isDown(Phaser.Keyboard.ESC)) {
+			location.reload();
+		}
+		if (this.input.keyboard.isDown(Phaser.Keyboard.ENTER)) {
+			location.reload();
+		}
+
+
+		
+		if (lives == 2) {
+			heart1.kill();
+		}
+		else if (lives == 1) {
+			heart2.kill();
+		}
+		else if (lives == 0){
+			heart3.kill();
+		}
+
+	}
+
+	function normalApple (player, star) {		
+		// Removes the apple from the screen
+		star.kill();
+		if (alive) {
+			score += 10;
+			if (score >= totalScore) {
+				totalScore = score + 200;
+				deathAppleSpeed = deathAppleSpeed - 2000;
+				if(normalAppleSpeed >= 50)
+				{
+				  normalAppleSpeed=normalAppleSpeed - 500;
+				  appleSpeed = appleSpeed * 2;
+				}    
+			}
+		   //Determining the direction of the apple
+			var bodyX = player.body.x + (player.body.width / 2);
+			var appleX = star.body.x + (star.body.width / 2);
+			direction(bodyX, appleX);       
+			//Setting the value of the score
+			scoreText.text = 'Score: ' + score;
+		}
+	}
+	//Direction Function
+	function direction(bodyX, appleX) {
+			if (bodyX > appleX ) {
+				player.animations.play('eatRight', 10, false, false);
+			}
+			else {
+				player.animations.play('eatLeft', 10, false, false);
+			}
+	}
+
+	function resetAnimation() {
+		 player.animations.stop(null, true);
+	}
+	//Death Function
+	function death(player, deathApple) {
+		deathApple.kill();
+		if (lives == 1) {
+			text = game.add.text(game.world.centerX, game.world.centerY, "- Game Over -\n(Press ESCAPE to restart)", { font: "65px Arial", fill: "#ff0044", align: "center" });
+			text.anchor.setTo(0.5, 0.5);
+
+			var bodyX = player.body.x + (player.body.width / 2);
+			var appleX = deathApple.body.x + (deathApple.body.width / 2);
+
+			direction(bodyX, appleX);
+			clearTimers();
+		}
+		lives = lives - 1;
+	}
+	//Slow function
+	function slow(player, slowApple) {
+		setTimeout(normalSpeed, 4000);
+		slowApple.kill();
+		speed = 150;
+		var bodyX = player.body.x + (player.body.width / 2);
+		var appleX = slowApple.body.x + (slowApple.body.width / 2);
+		direction(bodyX, appleX);
+	}
+
+	function bonus(player, bonusApple) {
+		bonusApple.kill();
+		score = score + 100;
+		scoreText.text = 'Score: ' + score;
+		var bodyX = player.body.x + (player.body.width / 2);
+		var appleX = bonusApple.body.x + (bonusApple.body.width / 2);
+		direction(bodyX, appleX);
+	}
+	//if the player died, stops timers from making more apples
+	function clearTimers() {		
+		game.add.sprite(player.body.x, player.body.y, 'explotion');
+		player.kill();
+		clearInterval(timer);  
+		clearInterval(timer1);
+		clearInterval(timer2);
+		clearInterval(timer3);
+		clearInterval(deathTimer);
+		clearInterval(slowTimer);
+		clearInterval(bonusTimer);
+		alive = false;
+	}
+
+	function normalSpeed() {
+		speed = 500;
+	}
+	
+	function Leap1()
+	{
+		var controller = Leap.loop(function(frame){
+		if(frame.hands.length > 0)
+		{
+			var hand = frame.hands[0];
+		   var velocity = hand.palmVelocity;
+		   player.body.velocity.x =   velocity[0] *4 ;
+		}
+		});
+	}
+	
+</script>
+</body>
+</html>
