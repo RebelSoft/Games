@@ -1,1 +1,1 @@
-This is a game built for the Corbitec HTML5 Game Hackathon 
+This is a game built for the Korbitec HTML5 Game Hackathon 
